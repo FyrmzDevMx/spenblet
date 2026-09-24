@@ -1,86 +1,114 @@
 # spenblet
 
-Use a Samsung S Pen phone as a wired drawing tablet on Linux.
+Use a Samsung Galaxy phone with an S Pen as a wired drawing tablet on Linux.
 
-spenblet consists of an Android drawing surface and a Linux daemon. They communicate only through a USB ADB port forward. The daemon creates a standard virtual pen device through `uinput`, allowing applications such as Krita to consume its input through libinput on Wayland or X11.
+spenblet pairs a lightweight Android companion app with a Rust daemon. Pen events travel over a USB connection through Android Debug Bridge (ADB); the daemon exposes them to Linux as a virtual tablet using `uinput`. Drawing applications such as Krita can then receive standard pen input through libinput.
+
+**Project status:** Beta 1.0 · **License:** GPL-3.0-or-later · **Platforms:** Android + Linux
+
+## Features
+
+- Absolute pen position and pressure (up to 4096 levels)
+- Hover, contact, distance, tilt, and side-button events
+- Virtual Linux pen device compatible with libinput
+- USB transport through a local ADB port forward
+- Automatic reconnection after transport interruptions
+
+## How it works
+
+```text
+Samsung phone with S Pen
+        │
+        ▼
+Android companion app (Kotlin)
+        │  USB · ADB port forward
+        ▼
+Linux daemon (Rust)
+        │  /dev/uinput
+        ▼
+libinput → Krita and other Linux applications
+```
+
+The daemon connects to `127.0.0.1:27183`; it does not expose a network service. The virtual device is named `spenblet Pen`.
+
+## Compatibility
+
+The first beta was validated with:
+
+- Samsung Galaxy S24 Ultra
+- CachyOS with KDE Wayland
+- Krita 6
+
+Other Samsung Galaxy Note and S devices may work when their Android input stack exposes S Pen events. Compatibility with other models and desktop environments has not yet been verified.
 
 ## Requirements
 
-- A Samsung Galaxy Note or S device whose Android input stack exposes S Pen events
-- USB debugging enabled and an authorized ADB connection
-- Linux with the `uinput` kernel module and permission to open `/dev/uinput`
+- A compatible Samsung phone with an S Pen
+- USB debugging enabled and the computer authorized in Android
+- Linux with the `uinput` kernel module
+- Permission to access `/dev/uinput`
 - Android Platform Tools (`adb`)
 
-## Install Beta 1.0
+## Install the beta
 
-For Arch-based, Debian, and Ubuntu-based distributions, connect the phone with USB debugging enabled, accept the authorization prompt, and run:
-
-```sh
-git clone https://github.com/Bocchi1204/spenblet.git && cd spenblet && ./scripts/oneliner.sh
-```
-
-The installer detects the package manager, installs the required tools, builds the daemon, installs the `uinput` rule, and installs the APK when an authorized device is available. It does not replace the manual commands below, which are useful for reviewing each step.
-
-Install `adb` and the tools needed to build the Linux daemon:
+Connect the phone over USB, enable USB debugging, and authorize the computer. Then run the installer:
 
 ```sh
-# Arch, CachyOS, Manjaro
-sudo pacman -S --needed android-tools android-udev rust
-
-# Debian, Ubuntu
-sudo apt install adb cargo
+git clone https://github.com/FDevMx/spenblet.git
+cd spenblet
+./scripts/oneliner.sh
 ```
 
-Download and install the APK from the GitHub release. Enable USB debugging on the phone, connect it, accept the authorization prompt, and verify the connection:
+The installer supports Arch-based, Debian, and Ubuntu-based distributions. It detects the package manager, installs the required tools, builds the Linux daemon, configures the `uinput` rule, and installs the Android app when an authorized device is connected.
 
-```sh
-adb devices
-```
-
-Build the Linux daemon and install the `uinput` access rule:
-
-```sh
-cargo build --manifest-path linux/Cargo.toml --release
-sudo modprobe uinput
-sudo ./scripts/install-udev.sh
-sudo install -Dm755 linux/target/release/spenblet-daemon /usr/local/bin/spenblet-daemon
-sudo install -Dm755 scripts/spenblet /usr/local/bin/spenblet
-printf '%s\n' 'uinput' | sudo tee /etc/modules-load.d/spenblet.conf >/dev/null
-```
-
-Log out and back in if access to `/dev/uinput` is denied. Open the Android app, then run:
+After installation, open the Android app and start the daemon:
 
 ```sh
 spenblet
 ```
 
-In Krita, select the `spenblet Pen` tablet device if needed.
-
-On KDE Wayland, start Krita natively if the distribution defaults to XWayland:
+In Krita, select `spenblet Pen` as the tablet device if necessary. On KDE Wayland, run Krita with its native Wayland backend when your distribution starts it through XWayland:
 
 ```sh
 QT_QPA_PLATFORM=wayland krita
 ```
 
-The ADB forward listens only on `127.0.0.1:27183`; the daemon connects to that local endpoint and is not a network service.
+## Build from source
 
-## Licensing
+Install the Android and Rust build tools, connect an authorized device, and build the Linux daemon:
 
-spenblet is licensed under GPL-3.0-or-later. See [LICENSE](LICENSE).
+```sh
+cargo build --manifest-path linux/Cargo.toml --release
+```
+
+For the Android companion app:
+
+```sh
+cd android
+./gradlew assembleDebug
+```
+
+For the complete manual setup and development checks, see [CONTRIBUTING.md](CONTRIBUTING.md) and the [CachyOS test procedure](docs/cachyos-test.md).
+
+## Current limitations
+
+- Linux installation and ADB forwarding use command-line tools.
+- Display selection and tablet calibration are not configurable yet.
+- Debian and Ubuntu packages are not available yet.
+- Hardware and desktop compatibility beyond the validated setup is still being tested.
+
+See [Beta 1.0 notes](docs/beta-1.0.md) for the release scope.
 
 ## Repository layout
 
-- `android/`: Android companion application
-- `linux/`: Rust daemon for Linux input injection
-- `packaging/`: distribution integration files
-- `docs/`: protocol and development documentation
+| Path | Description |
+| --- | --- |
+| `android/` | Kotlin companion app that captures S Pen input |
+| `linux/` | Rust daemon that creates the virtual tablet |
+| `packaging/` | Linux device permission rules |
+| `scripts/` | Installer and launch helpers |
+| `docs/` | Protocol, release notes, and test instructions |
 
-## Build checks
+## License
 
-```sh
-cargo fmt --manifest-path linux/Cargo.toml -- --check
-cargo clippy --manifest-path linux/Cargo.toml -- -D warnings
-cargo test --manifest-path linux/Cargo.toml
-cd android
-./gradlew assembleDebug lint
-```
+spenblet is licensed under the [GNU General Public License v3.0 or later](LICENSE).
