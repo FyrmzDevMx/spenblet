@@ -1,5 +1,7 @@
 # spenblet
 
+[![CI](https://github.com/FyrmzDevMx/spenblet/actions/workflows/ci.yml/badge.svg)](https://github.com/FyrmzDevMx/spenblet/actions/workflows/ci.yml)
+
 Use a Samsung Galaxy phone with an S Pen as a wired drawing tablet on Linux.
 
 spenblet pairs a lightweight Android companion app with a Rust daemon. Pen events travel over a USB connection through Android Debug Bridge (ADB); the daemon exposes them to Linux as a virtual tablet using `uinput`. Drawing applications such as Krita can then receive standard pen input through libinput.
