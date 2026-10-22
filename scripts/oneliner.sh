@@ -2,10 +2,18 @@
 set -eu
 
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-release_url=https://github.com/Bocchi1204/spenblet/releases/download/v1.0.0-beta.1/spenblet-1.0.0-beta.1.apk
+release_url=https://github.com/FyrmzDevMx/spenblet/releases/download/v1.0.0-beta.1/spenblet-1.0.0-beta.1.apk
 
 if command -v pacman >/dev/null 2>&1; then
-    sudo pacman -S --needed android-tools android-udev rust curl
+    if ! command -v cargo >/dev/null 2>&1 || ! command -v rustc >/dev/null 2>&1; then
+        arch_packages='android-tools android-udev rust curl'
+    else
+        arch_packages='android-tools android-udev curl'
+    fi
+
+    printf '%s\n' 'Arch-based systems require a full system upgrade when refreshing package databases.' >&2
+    printf '%s\n' 'The next command may update installed packages and may ask to replace rustup with rust if Rust is missing.' >&2
+    sudo pacman -Syu --needed $arch_packages
 elif command -v apt-get >/dev/null 2>&1; then
     sudo apt-get update
     sudo apt-get install -y adb cargo curl
