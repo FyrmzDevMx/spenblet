@@ -27,6 +27,30 @@ const ABS_DISTANCE: u16 = 0x19;
 const ABS_TILT_X: u16 = 0x1a;
 const ABS_TILT_Y: u16 = 0x1b;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum EventKind {
+    Down,
+    Move,
+    Hover,
+    Up,
+}
+
+impl EventKind {
+    fn parse(value: &str) -> Option<Self> {
+        match value {
+            "down" => Some(Self::Down),
+            "move" => Some(Self::Move),
+            "hover" => Some(Self::Hover),
+            "up" => Some(Self::Up),
+            _ => None,
+        }
+    }
+
+    fn is_touching(self) -> bool {
+        matches!(self, Self::Down | Self::Move)
+    }
+}
+
 #[repr(C)]
 struct InputId {
     bus_type: u16,
@@ -218,6 +242,9 @@ fn handle_client(stream: TcpStream, tablet: &mut Tablet) -> io::Result<()> {
         if fields.len() != 9 || fields[0] != "SPENBLET/1" {
             continue;
         }
+        let Some(kind) = EventKind::parse(fields[1]) else {
+            continue;
+        };
         let values: Result<Vec<i32>, _> = fields[2..8].iter().map(|value| value.parse()).collect();
         let Ok(values) = values else {
             continue;
@@ -233,7 +260,7 @@ fn handle_client(stream: TcpStream, tablet: &mut Tablet) -> io::Result<()> {
         tablet.event(EV_ABS, ABS_DISTANCE, values[3].clamp(0, MAX_DISTANCE))?;
         tablet.event(EV_ABS, ABS_TILT_X, values[4].clamp(-MAX_TILT, MAX_TILT))?;
         tablet.event(EV_ABS, ABS_TILT_Y, values[5].clamp(-MAX_TILT, MAX_TILT))?;
-        let touching = i32::from(fields[1] != "hover" && fields[1] != "up");
+        let touching = i32::from(kind.is_touching());
         tablet.event(EV_KEY, BTN_TOOL_PEN, 1)?;
         tablet.event(EV_KEY, BTN_TOUCH, touching)?;
         tablet.event(EV_KEY, BTN_STYLUS, button)?;
@@ -259,5 +286,27 @@ fn main() -> io::Result<()> {
             Err(error) => eprintln!("spenblet: waiting for Android companion: {error}"),
         }
         thread::sleep(Duration::from_secs(2));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EventKind;
+
+    #[test]
+    fn parses_supported_event_kinds() {
+        assert_eq!(EventKind::parse("down"), Some(EventKind::Down));
+        assert_eq!(EventKind::parse("move"), Some(EventKind::Move));
+        assert_eq!(EventKind::parse("hover"), Some(EventKind::Hover));
+        assert_eq!(EventKind::parse("up"), Some(EventKind::Up));
+        assert_eq!(EventKind::parse("invalid"), None);
+    }
+
+    #[test]
+    fn only_contact_events_mark_the_pen_as_touching() {
+        assert!(EventKind::Down.is_touching());
+        assert!(EventKind::Move.is_touching());
+        assert!(!EventKind::Hover.is_touching());
+        assert!(!EventKind::Up.is_touching());
     }
 }
