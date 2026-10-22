@@ -289,7 +289,6 @@ fn main() -> io::Result<()> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::EventKind;
