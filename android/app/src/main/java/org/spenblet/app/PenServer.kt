@@ -3,6 +3,7 @@ package org.spenblet.app
 import android.util.Log
 import java.io.Closeable
 import java.io.OutputStreamWriter
+import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.ArrayBlockingQueue
@@ -48,7 +49,7 @@ class PenServer : Closeable {
     fun start() {
         thread(name = "spenblet-server", isDaemon = true) {
             try {
-                ServerSocket(PORT).use { server ->
+                ServerSocket(PORT, 1, InetAddress.getByName("127.0.0.1")).use { server ->
                     socket = server
                     while (!server.isClosed) accept(server)
                 }
@@ -62,6 +63,10 @@ class PenServer : Closeable {
 
     private fun accept(server: ServerSocket) {
         val socket = server.accept()
+        if (clients.isNotEmpty()) {
+            socket.close()
+            return
+        }
         socket.tcpNoDelay = true
         val client = Client(socket) { clients -= it }
         clients += client

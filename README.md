@@ -29,7 +29,7 @@ Linux daemon (Rust)
 libinput → Krita and other Linux applications
 ```
 
-The daemon connects to `127.0.0.1:27183`; it does not expose a network service. The virtual device is named `spenblet Pen`.
+The Android app listens on device loopback only and accepts one client, reached through the USB ADB port forward. The Linux daemon connects to `127.0.0.1:27183`; neither side opens a listener on the Wi-Fi network. The virtual device is named `spenblet Pen`.
 
 ## Compatibility
 
