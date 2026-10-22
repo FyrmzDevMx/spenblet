@@ -2,6 +2,12 @@
 
 Contributions must preserve compatibility with standard Android stylus events and Linux `uinput`. Model-specific behavior belongs behind capability detection.
 
+## Commit messages
+
+Use a short, imperative subject that describes one change, such as `Handle USB reconnections`. Add a body when it explains the reason or a compatibility constraint. Avoid vague subjects such as `update` or `fixes`.
+
+## Checks
+
 Before submitting a change, run:
 
 ```sh
