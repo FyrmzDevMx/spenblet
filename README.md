@@ -61,4 +61,6 @@ cd spenblet
 ./scripts/oneliner.sh
 ```
 
-The installer supports Arch-based, Debian, and Ubuntu-based distributions. It detects the package manager, installs the required tools, builds the Linux daemon, configures the `uinput` rule, and installs the Android app when an authorized device is connected.
+The installer supports Arch-based distributions (including CachyOS). It installs the required tools, builds the Linux daemon, configures the `uinput` rule, and installs the Android app when an authorized device is connected. On Arch-based systems, pacman requires a full system upgrade when refreshing package databases, so the installer warns before running `pacman -Syu`.
+
+Debian and Ubuntu are not supported by the current beta installer.
