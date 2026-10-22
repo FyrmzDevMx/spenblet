@@ -61,4 +61,8 @@ cd spenblet
 ./scripts/oneliner.sh
 ```
 
-The installer supports Arch-based, Debian, and Ubuntu-based distributions. It detects the package manager, installs the required tools, builds the Linux daemon, configures the `uinput` rule, and installs the Android app when an authorized device is connected.
+The installer supports systems using `pacman`, `apt`, `dnf`, `yum`, `zypper`, `apk`, `xbps`, or `emerge` when the required packages are available in the repositories configured for that distribution. It refreshes repository metadata before installing missing tools, then builds the Linux daemon and configures `uinput`.
+
+On CachyOS, it also runs `cachyos-rate-mirrors` when available before updating packages. Arch-based systems require a full system upgrade when pacman refreshes package databases; Void Linux uses a full XBPS upgrade as well. The installer prints a warning before either operation. Other package managers use their configured repositories and mirror settings; the installer does not replace a distribution's mirror configuration.
+
+The beta has only been tested on CachyOS. If no authorized phone is connected, the installer saves the APK in the project directory so it can be installed later. Other distributions may need their own Android USB udev rules, kernel `uinput` support, or a package repository that provides Android Platform Tools. If your distribution uses another package manager, install `adb`, `cargo`, `rustc`, `curl`, `udev`, and Android USB udev rules manually, then rerun `./scripts/oneliner.sh`.

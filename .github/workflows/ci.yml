@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check installer shell syntax
+        run: for script in scripts/*.sh scripts/spenblet; do sh -n "$script"; done
+      - name: Check package manager commands
+        run: python3 scripts/test-install-dependencies.py
       - run: cargo fmt --manifest-path linux/Cargo.toml -- --check
       - run: cargo clippy --manifest-path linux/Cargo.toml -- -D warnings
       - run: cargo test --manifest-path linux/Cargo.toml
